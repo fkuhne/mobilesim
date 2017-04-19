@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "teste", "teste\teste.vcproj", "{92CC2E89-E409-4AA0-902E-BD3172BD40F6}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Pioneer_MAC", "G:\Pioneer_MAC\Pioneer_MAC.vcproj", "{9005F3B8-D337-3917-A171-7A0F03D0E72D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{92CC2E89-E409-4AA0-902E-BD3172BD40F6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{92CC2E89-E409-4AA0-902E-BD3172BD40F6}.Debug|Win32.Build.0 = Debug|Win32
+		{92CC2E89-E409-4AA0-902E-BD3172BD40F6}.Release|Win32.ActiveCfg = Release|Win32
+		{92CC2E89-E409-4AA0-902E-BD3172BD40F6}.Release|Win32.Build.0 = Release|Win32
+		{9005F3B8-D337-3917-A171-7A0F03D0E72D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9005F3B8-D337-3917-A171-7A0F03D0E72D}.Debug|Win32.Build.0 = Debug|Win32
+		{9005F3B8-D337-3917-A171-7A0F03D0E72D}.Release|Win32.ActiveCfg = Release|Win32
+		{9005F3B8-D337-3917-A171-7A0F03D0E72D}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
