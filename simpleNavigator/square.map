@@ -1,0 +1,12 @@
+2D-Map
+Resolution: 0
+LineMinPos: -2500 -2500
+LineMaxPos: 2500 2500
+NumLines: 4
+Cairn: RobotHome 0 0 0 "" ICON "" 
+LINES
+-2500 -2500 -2500 2500
+-2500 2500 2500 2500
+2500 2500 2500 -2500
+2500 -2500 -2500 -2500
+DATA
