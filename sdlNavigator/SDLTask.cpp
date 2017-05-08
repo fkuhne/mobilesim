@@ -40,12 +40,30 @@ int SDLTask::init()
     return 0;
 }
 
+static inline int min4(int a1, int a2, int a3, int a4)
+{
+  int min = a1;
+  if(min > a2) min = a2;
+  if(min > a3) min = a3;
+  if(min > a4) return a4;
+  return min;
+}
+
+static inline int max4(int a1, int a2, int a3, int a4)
+{
+  int max = a1;
+  if(max < a2) max = a2;
+  if(max < a3) max = a3;
+  if(max < a4) return a4;
+  return max;
+}
+
 void drawGrid(SDL_Renderer* renderer)
 {
   if(renderer == NULL)
     return;
 
-  SDL_SetRenderDrawColor(renderer, 230, 230, 230, SDL_ALPHA_OPAQUE);
+  SDL_SetRenderDrawColor(renderer, 240, 240, 240, SDL_ALPHA_OPAQUE);
 
   int gridStep = WINDOW_SIZE_X / 20;
   while(gridStep < WINDOW_SIZE_X)
@@ -61,7 +79,7 @@ void drawGrid(SDL_Renderer* renderer)
   }
 
   /* Draw X and Y central axis. */
-  SDL_SetRenderDrawColor(renderer, 200, 200, 200, SDL_ALPHA_OPAQUE);
+  SDL_SetRenderDrawColor(renderer, 220, 220, 220, SDL_ALPHA_OPAQUE);
   SDL_RenderDrawLine(renderer, WINDOW_SIZE_Y/2, 0, WINDOW_SIZE_Y/2, WINDOW_SIZE_X);
   SDL_RenderDrawLine(renderer, 0, WINDOW_SIZE_X/2, WINDOW_SIZE_Y, WINDOW_SIZE_X/2);
 //  SDL_RenderPresent(renderer);
@@ -83,7 +101,7 @@ void drawSonarAxis(ArRobot *robot, SDL_Renderer* renderer)
   double sinMinus15 = sin(ArMath::degToRad(robot->getTh()-15));
 
   /* Go to all sonars around the robot. */
-  for(int i = 0; i < 16; i++)
+  for(int i = 0; i < 8; i++)
   {
   //  printf("(%.2f,%.2f,%.2f) --> ", robot->getX(), robot->getX(), robot->getTh());
     /* Get information on sonars (not just range reading!). */
@@ -111,32 +129,38 @@ void drawSonarAxis(ArRobot *robot, SDL_Renderer* renderer)
     int globalEndX = (robotX + localEndX + X_AXIS_LIMIT) / WINDOW_SCALE_DIVIDER;
     int globalEndY = (Y_AXIS_LIMIT - (robotY + localEndY)) / WINDOW_SCALE_DIVIDER;
 
-    /* Draw a little rectangle centralized in the seosnr reading. */
-    SDL_Rect rect = {globalEndX - 1, globalEndY - 1, 2, 2};
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderFillRect(renderer, &rect);
-
-    //printf("globalOrigin: (%d,%d), globalEnd: (%d,%d)\n",
-    //  globalOriginX, globalOriginY, globalEndX, globalEndY);
-
     /* Draw a line for the acoustic axis of the sensor. */
-    int color = 255*(5000 - robot->getSonarRange(i))/5000;
+    int color = 255 * (5000 - robot->getSonarRange(i)) / 5000;
     /* The color turns yellow to red according to the sensor range. */
-    SDL_SetRenderDrawColor(renderer, 255, 255-color, 0, SDL_ALPHA_OPAQUE);
+    SDL_SetRenderDrawColor(renderer, 255, 255 - color, 0, 127);
     SDL_RenderDrawLine(renderer, globalOriginX, globalOriginY, globalEndX, globalEndY);
+    /* Draw a little rectangle centralized in the sensor reading. */
+    SDL_Rect rect = {globalEndX - 1, globalEndY - 1, 2, 2};
+    SDL_RenderFillRect(renderer, &rect);
 
     /* Compute the sensor cone. */
     double localConePlusX = sensorReading->getLocalX()*cosPlus15 - sensorReading->getLocalY()*sinPlus15;
     double localConePlusY = sensorReading->getLocalX()*sinPlus15 + sensorReading->getLocalY()*cosPlus15;
-    int globalConeX = (robotX + localConePlusX + X_AXIS_LIMIT) / WINDOW_SCALE_DIVIDER;
-    int globalConeY = (Y_AXIS_LIMIT - (robotY + localConePlusY)) / WINDOW_SCALE_DIVIDER;
-    //SDL_RenderDrawLine(renderer, globalOriginX, globalOriginY, globalConeX, globalConeY);
+    int globalConePlusX = (robotX + localConePlusX + X_AXIS_LIMIT) / WINDOW_SCALE_DIVIDER;
+    int globalConePlusY = (Y_AXIS_LIMIT - (robotY + localConePlusY)) / WINDOW_SCALE_DIVIDER;
+    //SDL_RenderDrawLine(renderer, globalOriginX, globalOriginY, globalConePlusX, globalConePlusY);
 
     double localConeMinusX = sensorReading->getLocalX()*cosMinus15 - sensorReading->getLocalY()*sinMinus15;
     double localConeMinusY = sensorReading->getLocalX()*sinMinus15 + sensorReading->getLocalY()*cosMinus15;
-    globalConeX = (robotX + localConeMinusX + X_AXIS_LIMIT) / WINDOW_SCALE_DIVIDER;
-    globalConeY = (Y_AXIS_LIMIT - (robotY + localConeMinusY)) / WINDOW_SCALE_DIVIDER;
-    //SDL_RenderDrawLine(renderer, globalOriginX, globalOriginY, globalConeX, globalConeY);
+    int globalConeMinusX = (robotX + localConeMinusX + X_AXIS_LIMIT) / WINDOW_SCALE_DIVIDER;
+    int globalConeMinusY = (Y_AXIS_LIMIT - (robotY + localConeMinusY)) / WINDOW_SCALE_DIVIDER;
+    //SDL_RenderDrawLine(renderer, globalOriginX, globalOriginY, globalConeMinusX, globalConeMinusY);
+
+    /* Computes a rectangle around the sensor field of view. This is the area
+     * that will be subjected to inspection. */
+    int x1 = min4(globalOriginX, globalConePlusX, globalConeMinusX, globalEndX);
+    int y1 = min4(globalOriginY, globalConePlusY, globalConeMinusY, globalEndY);
+    int w = max4(globalOriginX, globalConePlusX, globalConeMinusX, globalEndX);
+    int h = max4(globalOriginY, globalConePlusY, globalConeMinusY, globalEndY);
+    x1 *= 0.95; y1 *= 0.95; w = w * 1.05 - x1; h = h * 1.05 - y1;
+    SDL_Rect sensorRect = {x1, y1, w, h};
+    SDL_SetRenderDrawColor(renderer, 200, 200, 200, SDL_ALPHA_OPAQUE);
+    SDL_RenderDrawRect(renderer, &sensorRect);
   }
 }
 
@@ -170,14 +194,13 @@ void SDLTask::sdlTask()
     drawGrid(renderer);
 
     /* Draw the robot. Change this to a better representation. */
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-    int x = (robot->getX()+X_AXIS_LIMIT)/WINDOW_SCALE_DIVIDER;
-    int y = (Y_AXIS_LIMIT-robot->getY())/WINDOW_SCALE_DIVIDER;
+    int x = (robot->getX() + X_AXIS_LIMIT) / WINDOW_SCALE_DIVIDER;
+    int y = (Y_AXIS_LIMIT - robot->getY()) / WINDOW_SCALE_DIVIDER;
     SDL_Rect rect = {x-3, y-3, 6, 6};
-    SDL_SetRenderDrawColor(renderer, 0, 255, 0, SDL_ALPHA_OPAQUE);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderFillRect(renderer, &rect);
-    printf("(%.2f,%.2f) --> (%d,%d)\n", robot->getX(), robot->getY(),
-      x, y); //robot->getTh());
+    //printf("(%.2f,%.2f) --> (%d,%d)\n", robot->getX(), robot->getY(),
+    //  x, y); //robot->getTh());
 
     /*for(int i=0;i<16;i++)
       printf("%d ", robot->getSonarRange(i));
