@@ -15,6 +15,7 @@ class SDLTask
 {
 private:
   bool running = false;
+  bool method; // false = bayes, true = himm
 
   SDL_Window* window = NULL;
   SDL_Renderer* renderer = NULL;
@@ -26,7 +27,7 @@ private:
   ArFunctorC<SDLTask> SDLTaskFunc;
 
 public:
-  SDLTask(ArRobot *r);
+  SDLTask(ArRobot *r, bool method);
   int init();
   ~SDLTask();
 };

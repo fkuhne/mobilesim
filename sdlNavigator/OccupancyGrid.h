@@ -10,8 +10,19 @@ private:
 public:
   OccupancyGrid();
 
-  //vector<vector<double>> grid(WINDOW_SIZE_X, std::vector<double>(WINDOW_SIZE_Y,0.5));
-  //vector<vector<bool>> visited(WINDOW_SIZE_X, std::vector<bool>(WINDOW_SIZE_Y,false));
+  void clearBayes();
+  void clearVisited();
+  void computeBayes(const int gridX, const int gridY, const int s, const int r, const double alpha);
+  void computeHIMM(int region, const int gridX, const int gridY);
+  void gro(int gridX, int gridY);
+
+  struct {
+    double bayes;
+    int himm;
+    bool visited;
+    double alpha;
+    double distance;
+  } grid[WINDOW_SIZE_X+1][WINDOW_SIZE_Y+1];
 };
 
 #endif

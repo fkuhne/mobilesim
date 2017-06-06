@@ -13,8 +13,15 @@ AriaRobot::AriaRobot(int argc, char** argv)
 {
   Aria::init();
 
+  bool method = false; // defaut: bayes
+  if(!strncmp(argv[argc-1], "bayes", strlen("bayes")))
+    method = false;
+  else if(!strncmp(argv[argc-1], "himm", strlen("himm")))
+    method = true;
+
   ArArgumentParser parser(&argc, argv);
-  parser.loadDefaultArguments();
+  //parser.addDefaultArgument("-rh 192.168.1.11");
+  //parser.loadDefaultArguments();
 
   ArRobotConnector robotConnector(&parser, &robot);
   if (!robotConnector.connectRobot())
@@ -28,15 +35,15 @@ AriaRobot::AriaRobot(int argc, char** argv)
 
   // set the robots maximum velocity (sonar don't work at all well if you're
   // going faster)
-  robot.setAbsoluteMaxTransVel(2000);
+  robot.setAbsoluteMaxTransVel(200);
   robot.enableMotors();
 
   // limiter for close obstacles
-  //ArActionLimiterForwards limiter("speed limiter near", 300, 600, 250);
-  //robot.addAction(&limiter, 95);
+  ArActionLimiterForwards limiter("speed limiter near", 50, 600, 250);
+  robot.addAction(&limiter, 95);
   // limiter for far away obstacles
-  //ArActionLimiterForwards limiterFar("speed limiter far", 300, 1100, 400);
-  //robot.addAction(&limiterFar, 90);
+  ArActionLimiterForwards limiterFar("speed limiter far", 50, 1100, 400);
+  robot.addAction(&limiterFar, 90);
 
   // limiter that checks IR sensors (like Peoplebot has)
   ArActionLimiterTableSensor tableLimiter;
@@ -50,7 +57,7 @@ AriaRobot::AriaRobot(int argc, char** argv)
   ArActionKeydrive keydriveAct;
   robot.addAction(&keydriveAct, 45);
 
-  SDLTask sdlTask(&robot);
+  SDLTask sdlTask(&robot, method);
   sdlTask.init();
 
   // run the robot, true means that the run will exit if connection lost
@@ -60,6 +67,7 @@ AriaRobot::AriaRobot(int argc, char** argv)
   // argument means if it loses connection the task loop stops and the thread
   // exits.
   //robot.runAsync(true);
+  //while(1){}
 }
 
 AriaRobot::~AriaRobot()

@@ -5,14 +5,23 @@
 #define X_AXIS_LIMIT 10000
 #define Y_AXIS_LIMIT 10000
 
-#define WINDOW_SCALE_DIVIDER 40
+#define WINDOW_SCALE_DIVIDER 160
+
 /* Divide by 40 to get a window size of 500, which fits well in my screen.
  * Maybe in the future we can make this more dynamic, according to the map and
  * to the screen size. */
-#define WINDOW_SIZE_X (X_AXIS_LIMIT * 2) / WINDOW_SCALE_DIVIDER
-#define WINDOW_SIZE_Y (Y_AXIS_LIMIT * 2) / WINDOW_SCALE_DIVIDER
+#define WINDOW_SIZE_X ((X_AXIS_LIMIT * 2) / WINDOW_SCALE_DIVIDER)
+#define WINDOW_SIZE_Y ((Y_AXIS_LIMIT * 2) / WINDOW_SCALE_DIVIDER)
 
 /* Maximum range of a sonar in milimiters */
-#define SONAR_MAX_RANGE 5000
+#define SONAR_MAX_RANGE 5000.0
+
+/* Sonar field of view in degrees */
+#define SONAR_BETA 15.0
+
+/* Width for Region I */
+#define S_TOLERANCE 2
+
+#define HIMM_MAX_VALUE 15
 
 #endif
