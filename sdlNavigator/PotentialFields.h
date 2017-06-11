@@ -3,6 +3,8 @@
 
 #include "myGlobals.h"
 
+enum cellState {_unknown = 0, _free, _occupied};
+
 class PotentialFields
 {
 private:
@@ -15,7 +17,8 @@ public:
   void compute(const int robotX, const int robotY);
 
   struct {
-    double field;
+    double potential;
+    cellState state;
     bool visited;
   } grid[WINDOW_SIZE_X+1][WINDOW_SIZE_Y+1];
 };

@@ -11,10 +11,11 @@
 #include "SDLTask.h"
 #include "myGlobals.h"
 #include "OccupancyGrid.h"
+#include "PotentialFields.h"
 #include <math.h>
 
 OccupancyGrid grid;
-double beta = 15.0;
+PotentialFields potential;
 
 SDLTask::SDLTask(ArRobot *r, bool _method):
   /* Store a pointer to the ArRobot object. */
@@ -226,7 +227,7 @@ void computeOccupancyGrid(ArRobot *robot, bool _method, SDL_Renderer* renderer)
 
           /* Skip this grid element if it is outside the sensor cone or above the
           * Region I. */
-          if((fabs(alpha) > beta) || (r > (s + S_TOLERANCE)))
+          if((fabs(alpha) > SONAR_BETA) || (r > (s + S_TOLERANCE)))
             continue;
 
           /* Note that the regions of interest for the several sensors overlap. So
@@ -281,23 +282,25 @@ void computeOccupancyGrid(ArRobot *robot, bool _method, SDL_Renderer* renderer)
       int posY = globalOriginY;
 
       int cont = 0;
+      /* This is a loop that gos through the pixels of sensor axis. */
       while(true)
       {
         if(posX > WINDOW_SIZE_X) {posX = WINDOW_SIZE_X;} if(posX < 0) {posX = 0;}
         if(posY > WINDOW_SIZE_X) {posY = WINDOW_SIZE_X;} if(posY < 0) {posY = 0;}
 
-        double partialX = cont*v[0];
-        double partialY = cont*v[1];
+        double partialX = cont * v[0];
+        double partialY = cont * v[1];
 
         /* This is the size of the vector going from the sensor to the obstacle.
          * Its total length is equal to s. So let us test it and define the last
          * coordinate on it to be the obstacle itself. So we can paint it red
          * and break the loop. */
-        double q = sqrt(partialX*partialX+partialY*partialY);
+        double q = sqrt(partialX * partialX + partialY * partialY);
         if(q > s)
+          /* Here we are in region 1. */
           grid.computeHIMM(1, posX, posY);
         else
-          /* Here we are in region II. */
+          /* Region II. */
           grid.computeHIMM(2, posX, posY);
 
         int color = (15 - grid.grid[posX][posY].himm) * (255 / HIMM_MAX_VALUE);
@@ -315,6 +318,9 @@ void computeOccupancyGrid(ArRobot *robot, bool _method, SDL_Renderer* renderer)
         posY = globalOriginY + partialY;
         cont++;
       }
+
+      /* Update the potential field for the activated area. */
+
     }
   }
 }
@@ -338,16 +344,20 @@ void SDLTask::sdlTask()
     //SDL_RenderClear(renderer);
     //drawGrid(renderer);
 
-    /* Draw the robot. Change this to a better representation. */
-    /*int x = (robot->getX() + X_AXIS_LIMIT) / WINDOW_SCALE_DIVIDER;
+    /* Draw the robot. */
+    int x = (robot->getX() + X_AXIS_LIMIT) / WINDOW_SCALE_DIVIDER;
     int y = (Y_AXIS_LIMIT - robot->getY()) / WINDOW_SCALE_DIVIDER;
-    SDL_Rect rect = {x-3, y-3, 6, 6};
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderFillRect(renderer, &rect);*/
+    SDL_RenderDrawPoint(renderer, x, y);
+    //SDL_Rect rect = {x-3, y-3, 6, 6};
+    //SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+    //SDL_RenderFillRect(renderer, &rect);
     //printf("(%.2f,%.2f) --> (%d,%d)\n", robot->getX(), robot->getY(),
     //  x, y); //robot->getTh());
 
     computeOccupancyGrid(robot, method, renderer);
+
+    potential.clearVisited();
   //  grid.clearVisited();
     //running = false;
 
