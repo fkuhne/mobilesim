@@ -35,7 +35,7 @@ AriaRobot::AriaRobot(int argc, char** argv)
 
   // set the robots maximum velocity (sonar don't work at all well if you're
   // going faster)
-  robot.setAbsoluteMaxTransVel(200);
+  robot.setAbsoluteMaxTransVel(200); // mm/sec
   robot.enableMotors();
 
   // limiter for close obstacles

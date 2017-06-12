@@ -21,7 +21,20 @@ void PotentialFields::clearVisited()
   }}
 }
 
-void PotentialFields::compute(const int robotX, const int robotY)
+void PotentialFields::updateState(const int gridX, const int gridY, const int himmValue)
+{
+  if(himmValue > 5)
+  {
+    grid[gridX][gridY].potential = 1.0;
+    grid[gridX][gridY].state = _occupied;
+  }
+  else if(himmValue == 0)
+  {
+    grid[gridX][gridY].potential = 0.0;
+    grid[gridX][gridY].state = _free;
+  }
+}
+void PotentialFields::compute(const int gridX, const int gridY)
 {
   /* I don't have to care about separate old and new values, as long as I follow
    * the natural order to go through the matrix of points. That is, points above
@@ -32,16 +45,16 @@ void PotentialFields::compute(const int robotX, const int robotY)
 
   double partial = 1;
 
-  if(robotX > 0) partial = grid[robotX-1][robotY].potential;
+  if(gridX > 0) partial = grid[gridX - 1][gridY].potential;
 
-  if(robotY > 0) partial += grid[robotX][robotY-1].potential;
+  if(gridY > 0) partial += grid[gridX][gridY - 1].potential;
   else partial += 1;
 
-  if(robotX < WINDOW_SIZE_X) partial += grid[robotX+1][robotY].potential;
+  if(gridX < WINDOW_SIZE_X) partial += grid[gridX + 1][gridY].potential;
   else partial += 1;
 
-  if(robotY < WINDOW_SIZE_Y) partial += grid[robotX][robotY+1].potential;
+  if(gridY < WINDOW_SIZE_Y) partial += grid[gridX][gridY + 1].potential;
   else partial += 1;
 
-  grid[robotX][robotY].potential = 0.25*partial;
+  grid[gridX][gridY].potential = 0.25*partial;
 }

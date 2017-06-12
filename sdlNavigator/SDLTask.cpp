@@ -308,6 +308,9 @@ void computeOccupancyGrid(ArRobot *robot, bool _method, SDL_Renderer* renderer)
         //else if(grid.grid[posX][posY].himm <= 10) color = 127; // gray
         //else if(grid.grid[posX][posY].himm == 15) color = 0; // black
 
+        /* Set state of the cells according to the certainty values given by HIMM. */
+        potential.updateState(posX, posY, grid.grid[posX][posY].himm);
+
         SDL_SetRenderDrawColor(renderer, color, color, color, SDL_ALPHA_OPAQUE); // region I
         SDL_RenderDrawPoint(renderer, posX, posY);
 
@@ -317,12 +320,61 @@ void computeOccupancyGrid(ArRobot *robot, bool _method, SDL_Renderer* renderer)
         posX = globalOriginX + partialX;
         posY = globalOriginY + partialY;
         cont++;
-      }
+      } // loop for axis points
+    } // loop for mapping method
+  } // loop for all sensors
+}
 
-      /* Update the potential field for the activated area. */
+void computePotentialField(ArRobot *robot, SDL_Renderer* renderer)
+{
+  if(renderer == NULL || robot == NULL)
+    return;
 
+  /* Compute robot data just once. */
+  int robotX = (robot->getX() + X_AXIS_LIMIT) / WINDOW_SCALE_DIVIDER;
+  int robotY = (Y_AXIS_LIMIT - robot->getY()) / WINDOW_SCALE_DIVIDER;
+
+  /* Define activation window. */
+  int activationWindowSize = (SONAR_MAX_RANGE / WINDOW_SCALE_DIVIDER) * 0.6;
+  int leftX = robotX - activationWindowSize;
+  if(leftX < 0) leftX = 0;
+  int rightX = robotX + activationWindowSize;
+  if(rightX > WINDOW_SIZE_X) rightX = WINDOW_SIZE_X;
+
+  int upperY = robotY - activationWindowSize;
+  if(upperY < 0) upperY = 0;
+  int bottomY = robotY + activationWindowSize;
+  if(bottomY > WINDOW_SIZE_Y) bottomY = WINDOW_SIZE_Y;
+
+  //SDL_Rect activationWindowRect = {leftX, upperY, rightX - leftX, bottomY - upperY};
+  //SDL_SetRenderDrawColor(renderer, 180, 180, 180, SDL_ALPHA_OPAQUE);
+  //SDL_RenderDrawRect(renderer, &activationWindowRect);
+
+  /* Compute potential. */
+  int i=30;
+  while(i-- > 0) {
+  for(int gridY = upperY; gridY <= bottomY; gridY++)
+  {
+    for(int gridX = leftX; gridX <= rightX; gridX++)
+    {
+      if(potential.grid[gridX][gridY].visited == true
+        || potential.grid[gridX][gridY].state == _occupied)
+        continue;
+
+      potential.grid[gridX][gridY].visited = true;
+      potential.grid[gridX][gridY].state = _free;
+
+      potential.compute(gridX, gridY);
     }
-  }
+  }}
+
+  /* Define heading angle. */
+  double Dx = potential.grid[robotX - 1][robotY].potential - potential.grid[robotX + 1][robotY].potential;
+  double Dy = potential.grid[robotX][robotY - 1].potential - potential.grid[robotX][robotY + 1].potential;
+  double heading = ArMath::atan2(Dx, Dy);
+
+  /* Set it to the robot. */
+  robot->setHeading(heading);
 }
 
 
@@ -355,19 +407,24 @@ void SDLTask::sdlTask()
     //printf("(%.2f,%.2f) --> (%d,%d)\n", robot->getX(), robot->getY(),
     //  x, y); //robot->getTh());
 
+    robot->lock();
     computeOccupancyGrid(robot, method, renderer);
+    //grid.clearVisited();
+
+    /* Potential fields only for HIMM grid. */
+    if(method == true)
+      computePotentialField(robot, renderer);
 
     potential.clearVisited();
-  //  grid.clearVisited();
     //running = false;
 
     SDL_RenderPresent(renderer);
 
     lastLogTime.setToNow(); // reset timer
+
+    robot->unlock();
   }
 }
-
-
 
 SDLTask::~SDLTask()
 {

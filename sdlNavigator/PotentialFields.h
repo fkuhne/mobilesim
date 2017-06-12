@@ -14,6 +14,7 @@ public:
 
   void clearGrid();
   void clearVisited();
+  void updateState(const int gridX, const int gridY, const int himmValue);
   void compute(const int robotX, const int robotY);
 
   struct {
@@ -21,6 +22,8 @@ public:
     cellState state;
     bool visited;
   } grid[WINDOW_SIZE_X+1][WINDOW_SIZE_Y+1];
+
+  int numberOfCells = WINDOW_SIZE_X * WINDOW_SIZE_Y;
 };
 
 #endif
