@@ -30,14 +30,6 @@ AriaRobot::AriaRobot(int argc, char** argv)
     Aria::exit(1);
   }
 
-  ArSonarDevice sonarDev;
-  robot.addRangeDevice(&sonarDev);
-
-  // set the robots maximum velocity (sonar don't work at all well if you're
-  // going faster)
-  robot.setAbsoluteMaxTransVel(200); // mm/sec
-  robot.enableMotors();
-
   // limiter for close obstacles
   ArActionLimiterForwards limiter("speed limiter near", 50, 600, 250);
   robot.addAction(&limiter, 95);
@@ -57,17 +49,30 @@ AriaRobot::AriaRobot(int argc, char** argv)
   ArActionKeydrive keydriveAct;
   robot.addAction(&keydriveAct, 45);
 
+  ArSonarDevice sonarDev;
+  robot.addRangeDevice(&sonarDev);
+
+  // set the robots maximum velocity (sonar don't work at all well if you're
+  // going faster)
+  robot.setAbsoluteMaxTransVel(50); // mm/sec
+  robot.enableMotors();
+
+  /* The robot starts moving right away, without keyboard commands. */
+  robot.setVel(50);
+
+  /* This creates a posix thread which will compute everything on the map (Bayes,
+   * HIMM and Potential fields). */
   SDLTask sdlTask(&robot, method);
   sdlTask.init();
 
   // run the robot, true means that the run will exit if connection lost
-  robot.run(true);
+  //robot.run(true);
 
   // Start the robot task loop running in a new background thread. The 'true'
   // argument means if it loses connection the task loop stops and the thread
   // exits.
-  //robot.runAsync(true);
-  //while(1){}
+  robot.runAsync(true);
+  while(1){}
 }
 
 AriaRobot::~AriaRobot()

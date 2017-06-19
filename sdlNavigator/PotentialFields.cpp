@@ -21,20 +21,20 @@ void PotentialFields::clearVisited()
   }}
 }
 
-void PotentialFields::updateState(const int gridX, const int gridY, const int himmValue)
+void PotentialFields::updateState(int gridX, int gridY, int himmValue)
 {
   if(himmValue > 5)
   {
     grid[gridX][gridY].potential = 1.0;
     grid[gridX][gridY].state = _occupied;
   }
-  else if(himmValue == 0)
+  /*else //if(himmValue == 0)
   {
-    grid[gridX][gridY].potential = 0.0;
+    //grid[gridX][gridY].potential = 0;
     grid[gridX][gridY].state = _free;
-  }
+  }*/
 }
-void PotentialFields::compute(const int gridX, const int gridY)
+double PotentialFields::compute(int gridX, int gridY)
 {
   /* I don't have to care about separate old and new values, as long as I follow
    * the natural order to go through the matrix of points. That is, points above
@@ -43,7 +43,7 @@ void PotentialFields::compute(const int gridX, const int gridY)
 
   /* If some coordinate goes out of the map, its value is considered to be 1. */
 
-  double partial = 1;
+  double partial = 1.0;
 
   if(gridX > 0) partial = grid[gridX - 1][gridY].potential;
 
@@ -56,5 +56,13 @@ void PotentialFields::compute(const int gridX, const int gridY)
   if(gridY < WINDOW_SIZE_Y) partial += grid[gridX][gridY + 1].potential;
   else partial += 1;
 
-  grid[gridX][gridY].potential = 0.25*partial;
+  partial *= 0.25;
+
+  double error = (grid[gridX][gridY].potential - partial) * (grid[gridX][gridY].potential - partial);
+
+  grid[gridX][gridY].potential = partial;
+
+//  printf("p(%d,%d)=%.2f ", gridX, gridY, partial);fflush(stdout);
+
+  return error;
 }

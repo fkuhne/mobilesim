@@ -81,6 +81,11 @@ void OccupancyGrid::computeHIMM(int region, const int gridX, const int gridY)
   {
     grid[gridX][gridY].himm += 3;
 
+    if(gridX > 0) grid[gridX - 1][gridY].himm += 1;
+    if(gridX < WINDOW_SIZE_X) grid[gridX + 1][gridY].himm += 1;
+    if(gridY > 0) grid[gridX][gridY - 1].himm += 1;
+    if(gridY < WINDOW_SIZE_X) grid[gridX][gridY - 1].himm += 1;
+
     gro(gridX, gridY);
 
     //if(grid[gridX][gridY].himm > HIMM_MAX_VALUE)

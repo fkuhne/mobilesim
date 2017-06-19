@@ -14,8 +14,8 @@ public:
 
   void clearGrid();
   void clearVisited();
-  void updateState(const int gridX, const int gridY, const int himmValue);
-  void compute(const int robotX, const int robotY);
+  void updateState(int gridX, int gridY, int himmValue);
+  double compute(int robotX, int robotY);
 
   struct {
     double potential;
