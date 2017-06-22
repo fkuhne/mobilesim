@@ -110,7 +110,7 @@ void SDLTask::computePotentialField(ArRobot *robot, SDL_Renderer* renderer)
 
   /* Compute potential. */
   double error = 1.0;
-  double min_error = 0.00001;
+  double min_error = 0.000001;
   while(error > min_error)
   {
     error = 0;

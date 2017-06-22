@@ -57,6 +57,8 @@ AriaRobot::AriaRobot(int argc, char** argv)
   //robot.setAbsoluteMaxTransVel(100); // mm/sec
   //robot.setHeading(0);
   //robot.setVel(0);
+
+  robot.setRotVelMax(10);
   robot.enableMotors();
 
   /* The robot starts moving right away, without keyboard commands. */
@@ -92,12 +94,11 @@ printf(", diffTh = %.2f\n", diffTh);
     //else
     //  robot.setVel2(10+20*sin(diffTh), 10-20*sin(diffTh));
 
-    if(diffTh <= 75)
-      robot.setVel(50);
-    else
-      robot.setVel(10);
+    if(abs(diffTh) <= 10)
+      robot.setVel(100);
+    else //if(abs(diffTh) > 90)
+      robot.setVel(0);
 
-    //robot.setVel(10);
     robot.setHeading(sdlTask.getHeading());
     robot.unlock();
 
@@ -106,7 +107,6 @@ printf(", diffTh = %.2f\n", diffTh);
       if(robot.isHeadingDone()) break;
       ArUtil::sleep(50);
     }
-    //robot.setVel(50);
 
     ArUtil::sleep(200);
   }

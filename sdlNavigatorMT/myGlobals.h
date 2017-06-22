@@ -5,7 +5,7 @@
 #define X_AXIS_LIMIT 10000
 #define Y_AXIS_LIMIT 10000
 
-#define WINDOW_SCALE_DIVIDER 80
+#define WINDOW_SCALE_DIVIDER 60
 
 /* Divide by 40 to get a window size of 500, which fits well in my screen.
  * Maybe in the future we can make this more dynamic, according to the map and
