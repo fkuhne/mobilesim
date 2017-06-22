@@ -44,16 +44,40 @@ static inline int max4(int a1, int a2, int a3, int a4)
   return max;
 }
 
-void SDLTask::computePotentialField(ArRobot *robot, SDL_Renderer* renderer)
+void computeActivationWindow(ArRobot *robot)
 {
-  if(renderer == NULL || robot == NULL)
+  if(robot == NULL)
     return;
 
-  int robotX = (robot->getX() + X_AXIS_LIMIT) / WINDOW_SCALE_DIVIDER;
-  int robotY = (Y_AXIS_LIMIT - robot->getY()) / WINDOW_SCALE_DIVIDER;
+  int robotX = robot->getX();
+  int robotY = robot->getY();
+  double robotTheta = robot->getTh();
+  double cosTheta = cos(ArMath::degToRad(robotTheta));
+  double sinTheta = sin(ArMath::degToRad(robotTheta));
+
+  ArSensorReading *sensorReading[8] = {NULL};
+  struct _coord {int x; int y;} sensorEnd[8];
+  int leftX=0xFFFF, rightX=-1, upperY=0xFFFF, bottomY=-1;
+  for(int i = 0; i < 8; i++)
+  {
+    /* Compute the coordinates of the sensor reading with respect to the scaled
+     * map. */
+    sensorReading[i] = robot->getSonarReading(i);
+    double localEndX = sensorReading[i]->getLocalX()*cosTheta - sensorReading[i]->getLocalY()*sinTheta;
+    double localEndY = sensorReading[i]->getLocalX()*sinTheta + sensorReading[i]->getLocalY()*cosTheta;
+    sensorEnd[i].x = round((robotX + localEndX + X_AXIS_LIMIT) / WINDOW_SCALE_DIVIDER);
+    sensorEnd[i].y = round((Y_AXIS_LIMIT - (robotY + localEndY)) / WINDOW_SCALE_DIVIDER);
+    if(sensorEnd[i].y < 0) sensorEnd[i].y = 0;
+
+    if(sensorEnd[i].x < leftX) leftX = sensorEnd[i].x;
+    if(sensorEnd[i].y < upperY) upperY = sensorEnd[i].y;
+
+    if(sensorEnd[i].x > rightX) rightX = sensorEnd[i].x;
+    if(sensorEnd[i].y > bottomY) bottomY = sensorEnd[i].y;
+  }
 
   /* Define activation window. */
-  int activationWindowSize = (SONAR_MAX_RANGE / WINDOW_SCALE_DIVIDER);
+  /*int activationWindowSize = (SONAR_MAX_RANGE / WINDOW_SCALE_DIVIDER);
   int leftX = robotX - activationWindowSize;
   if(leftX < 0) leftX = 0;
   int rightX = robotX + activationWindowSize;
@@ -61,14 +85,12 @@ void SDLTask::computePotentialField(ArRobot *robot, SDL_Renderer* renderer)
   int upperY = robotY - activationWindowSize;
   if(upperY < 0) upperY = 0;
   int bottomY = robotY + activationWindowSize;
-  if(bottomY > WINDOW_SIZE_Y) bottomY = WINDOW_SIZE_Y;
+  if(bottomY > WINDOW_SIZE_Y) bottomY = WINDOW_SIZE_Y;*/
 
-  for(int gridY = upperY; gridY <= bottomY; gridY++) {
-    for(int gridX = leftX; gridX <= rightX; gridX++) {
+  for(int gridY = upperY; gridY <= bottomY; gridY++)
+    for(int gridX = leftX; gridX <= rightX; gridX++)
       if(potential.grid[gridX][gridY].state == _unknown)
         potential.grid[gridX][gridY].state = _free;
-    }
-  }
 
   /* Make the region where the robot is free. */
   //for(int gridY = robotY-5; gridY <= robotY+5; gridY++)
@@ -79,6 +101,12 @@ void SDLTask::computePotentialField(ArRobot *robot, SDL_Renderer* renderer)
   //SDL_Rect activationWindowRect = {leftX, upperY, rightX - leftX, bottomY - upperY};
   //SDL_SetRenderDrawColor(renderer, 180, 180, 180, SDL_ALPHA_OPAQUE);
   //SDL_RenderDrawRect(renderer, &activationWindowRect);
+}
+
+void SDLTask::computePotentialField(ArRobot *robot, SDL_Renderer* renderer)
+{
+  if(renderer == NULL || robot == NULL)
+    return;
 
   /* Compute potential. */
   double error = 1.0;
@@ -94,7 +122,7 @@ void SDLTask::computePotentialField(ArRobot *robot, SDL_Renderer* renderer)
       {
         if(potential.grid[gridX][gridY].state == _free)
         {
-          /*error +=*/ potential.compute(gridX, gridY);
+          potential.compute(gridX, gridY);
         }
       }
     }
@@ -106,7 +134,7 @@ void SDLTask::computePotentialField(ArRobot *robot, SDL_Renderer* renderer)
       {
         if(potential.grid[gridX][gridY].state == _free)
         {
-          /*error +=*/ potential.compute(gridX, gridY);
+          potential.compute(gridX, gridY);
         }
       }
     }
@@ -118,7 +146,7 @@ void SDLTask::computePotentialField(ArRobot *robot, SDL_Renderer* renderer)
       {
         if(potential.grid[gridX][gridY].state == _free)
         {
-          /*error +=*/ potential.compute(gridX, gridY);
+          potential.compute(gridX, gridY);
         }
       }
     }
@@ -136,37 +164,20 @@ void SDLTask::computePotentialField(ArRobot *robot, SDL_Renderer* renderer)
     }
   }
 
-//  robot->lock();
-
-  /* Update this, because probably the robot has moved. */
-  robotX = (robot->getX() + X_AXIS_LIMIT) / WINDOW_SCALE_DIVIDER;
-  robotY = (Y_AXIS_LIMIT - robot->getY()) / WINDOW_SCALE_DIVIDER;
+  int robotX = (robot->getX() + X_AXIS_LIMIT) / WINDOW_SCALE_DIVIDER;
+  int robotY = (Y_AXIS_LIMIT - robot->getY()) / WINDOW_SCALE_DIVIDER;
 
   /* Define heading angle. */
   double Dx = potential.grid[robotX - 1][robotY].potential - potential.grid[robotX + 1][robotY].potential;
-  double Dy = potential.grid[robotX][robotY - 1].potential - potential.grid[robotX][robotY + 1].potential;
+  double Dy = potential.grid[robotX][robotY + 1].potential - potential.grid[robotX][robotY - 1].potential;
   //heading = ArMath::radToDeg(atan2(Dy, Dx));
 
-  setHeading(ArMath::radToDeg(atan2(Dx, Dy)));
-
-  //robot->setVel(0);
-  ///* Set it to the robot. */
-  //robot->setHeading(heading);
-  //while(!robot->isHeadingDone()) {}
-  //robot->setVel(50);
-
-//  double diffTh = heading - robot->getTh();
-//  diffTh = fmod((diffTh+180+360), 360) - 180;
-//  if(diffTh <= 90)
-//    robot->setVel2(50+50*ArMath::sin(diffTh), 50-50*ArMath::sin(diffTh));
-//  else
-//    robot->setVel2(10+20*ArMath::sin(diffTh), 10-20*ArMath::sin(diffTh));
-//  robot->unlock();
+  setHeading(ArMath::atan2(Dy, Dx));
 }
 
 void computeOccupancyGrid(ArRobot *robot, bool _method, SDL_Renderer* renderer)
 {
-  if(renderer == NULL || robot == NULL)
+  if(robot == NULL)
     return;
 
   /* Get information on sonars (not just range reading!). */
@@ -192,7 +203,7 @@ void computeOccupancyGrid(ArRobot *robot, bool _method, SDL_Renderer* renderer)
   /* Go to all sonars around the robot. */
   for(int i = 0; i < 8; i++)
   {
-    if(/*(_method == true) &&*/ (sonarRange[i] >= SONAR_MAX_RANGE))
+    if((_method == true) && (sonarRange[i] >= SONAR_MAX_RANGE))
       continue;
 
 //printf("sensor=(%.2f,%.2f,%.2f) range=%.2f(%.2f,%.2f), reading=(%.2f,%.2f)\n",
@@ -314,8 +325,11 @@ void computeOccupancyGrid(ArRobot *robot, bool _method, SDL_Renderer* renderer)
           if(sonarRange[i] >= SONAR_MAX_RANGE || grid.grid[gridX][gridY].bayes < 0.5)
           {
             /* Paint with white */
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-            SDL_RenderDrawPoint(renderer, gridX, gridY);
+            if(renderer)
+            {
+              SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+              SDL_RenderDrawPoint(renderer, gridX, gridY);
+            }
             continue;
           }
 
@@ -324,7 +338,6 @@ void computeOccupancyGrid(ArRobot *robot, bool _method, SDL_Renderer* renderer)
 
           grid.grid[gridX][gridY].distance = r;
           grid.grid[gridX][gridY].alpha = alpha;
-          int color = (1.0 - grid.grid[gridX][gridY].bayes) * 255;
 
           //int color = 255;
           //if(grid.bayes[gridX][gridY] <= 0.3) color = 255; /* White */
@@ -332,8 +345,12 @@ void computeOccupancyGrid(ArRobot *robot, bool _method, SDL_Renderer* renderer)
           //else if(grid.bayes[gridX][gridY] > 0.7) color = 127; /* Medium gray */
           //else color = 5; /* Black */
           //printf("bayes[%d][%d]=%.2f, color=%d\n", gridX, gridY, grid.bayes[gridX][gridY], color);
-          SDL_SetRenderDrawColor(renderer, color, color, color, SDL_ALPHA_OPAQUE);
-          SDL_RenderDrawPoint(renderer, gridX, gridY);
+          if(renderer)
+          {
+            int color = (1.0 - grid.grid[gridX][gridY].bayes) * 255;
+            SDL_SetRenderDrawColor(renderer, color, color, color, SDL_ALPHA_OPAQUE);
+            SDL_RenderDrawPoint(renderer, gridX, gridY);
+          }
         }
       }
     }
@@ -370,10 +387,12 @@ void computeOccupancyGrid(ArRobot *robot, bool _method, SDL_Renderer* renderer)
           /* Set state of the cells according to the certainty values given by HIMM. */
           potential.updateState(posX, posY, grid.grid[posX][posY].himm);
 
-
-          int color = (15 - grid.grid[posX][posY].himm) * (255 / HIMM_MAX_VALUE);
-          SDL_SetRenderDrawColor(renderer, color, color, color, SDL_ALPHA_OPAQUE);
-          SDL_RenderDrawPoint(renderer, posX, posY);
+          if(renderer)
+          {
+            int color = (15 - grid.grid[posX][posY].himm) * (255 / HIMM_MAX_VALUE);
+            SDL_SetRenderDrawColor(renderer, color, color, color, SDL_ALPHA_OPAQUE);
+            SDL_RenderDrawPoint(renderer, posX, posY);
+          }
         }
 
         else
@@ -392,16 +411,14 @@ void drawPotentialField(SDL_Renderer *renderer)
 {
   for(int gridY = 0; gridY <= WINDOW_SIZE_Y; gridY++) {
     for(int gridX = 0; gridX <= WINDOW_SIZE_X; gridX++) {
-      //if(potential.grid[gridX][gridY].state == _unknown)
-      //  SDL_SetRenderDrawColor(renderer, 200, 200, 200, SDL_ALPHA_OPAQUE);
       if(potential.grid[gridX][gridY].state != _unknown) //else
       {
         if(potential.grid[gridX][gridY].potential == 1 && potential.grid[gridX][gridY].state == _occupied)
           SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
         else
         {
-          int color = round(230.0 * (1.0 - potential.grid[gridX][gridY].potential));
-          SDL_SetRenderDrawColor(renderer, 230-color, color, 0, SDL_ALPHA_OPAQUE);
+          int color = round(255.0 * (1.0 - potential.grid[gridX][gridY].potential));
+          SDL_SetRenderDrawColor(renderer, 255-color, color, 0, SDL_ALPHA_OPAQUE);
         }
         SDL_RenderDrawPoint(renderer, gridX, gridY);
       }
@@ -417,37 +434,38 @@ void SDLTask::sdlTask()
   while(true)
   {
     SDL_PollEvent(&event);
-    if(running && sdlTimer.mSecSince() >= 100)  // 1.0 second has passed since start or last log
+    if(running && sdlTimer.mSecSince() >= 0)  // 1.0 second has passed since start or last log
     {
-      if(event.type == SDL_QUIT)
+      /*if(event.type == SDL_QUIT)
       {
         running = false;
         return;
-      }
+      }*/
       /*else if(event.type == SDL_KEYDOWN)
       {
         printf("%c\n", event.key.keysym.scancode);
       }*/
 
       /* Draw the robot. */
-      int x = (robot->getX() + X_AXIS_LIMIT) / WINDOW_SCALE_DIVIDER;
-      int y = (Y_AXIS_LIMIT - robot->getY()) / WINDOW_SCALE_DIVIDER;
-      SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
-      SDL_RenderDrawPoint(renderer, x, y);
-      SDL_SetRenderDrawColor(potentialRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-      SDL_RenderDrawPoint(potentialRenderer, x, y);
+      //int x = (robot->getX() + X_AXIS_LIMIT) / WINDOW_SCALE_DIVIDER;
+      //int y = (Y_AXIS_LIMIT - robot->getY()) / WINDOW_SCALE_DIVIDER;
+      //SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
+      //SDL_RenderDrawPoint(renderer, x, y);
+      //SDL_SetRenderDrawColor(potentialRenderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+      //SDL_RenderDrawPoint(potentialRenderer, x, y);
 
+      computeOccupancyGrid(robot, method, NULL);
 
-      computeOccupancyGrid(robot, method, renderer);
+      computeActivationWindow(robot);
 
       computePotentialField(robot, potentialRenderer);
 
       drawPotentialField(potentialRenderer);
 
       /* Redraw the screen. */
-      SDL_RenderPresent(renderer);
+      //SDL_RenderPresent(renderer);
       SDL_RenderPresent(potentialRenderer);
-      //SDL_Delay(100);
+      SDL_Delay(700);
 
       sdlTimer.setToNow(); // reset timer
     }
@@ -459,7 +477,7 @@ int SDLTask::init()
     if(SDL_Init(SDL_INIT_EVERYTHING) != 0)
       return -1;
 
-    window = SDL_CreateWindow("Occupancy Grid",
+    /*window = SDL_CreateWindow("Occupancy Grid",
       SDL_WINDOWPOS_UNDEFINED,
       SDL_WINDOWPOS_UNDEFINED,
       WINDOW_SIZE_X, WINDOW_SIZE_Y,
@@ -468,7 +486,7 @@ int SDLTask::init()
     //SDL_RenderSetLogicalSize(renderer, WINDOW_SIZE_X, WINDOW_SIZE_Y);
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
+    SDL_RenderPresent(renderer);*/
 
     potentialWindow = SDL_CreateWindow("Potential Field",
       SDL_WINDOWPOS_UNDEFINED,

@@ -23,7 +23,7 @@ void PotentialFields::clearVisited()
 
 void PotentialFields::updateState(int gridX, int gridY, int himmValue)
 {
-  if(himmValue >= 10)
+  if(himmValue >= 3)
   {
     grid[gridX][gridY].potential = 1.0;
     grid[gridX][gridY].state = _occupied;
@@ -43,7 +43,7 @@ double PotentialFields::compute(int gridX, int gridY)
 
   /* If some coordinate goes out of the map, its value is considered to be 1. */
 
-  double partial = 1.0;
+  /*double partial = 1.0;
 
   if(gridX > 0) partial = grid[gridX - 1][gridY].potential;
 
@@ -56,7 +56,12 @@ double PotentialFields::compute(int gridX, int gridY)
   if(gridY < WINDOW_SIZE_Y) partial += grid[gridX][gridY + 1].potential;
   else partial += 1.0; //wall
 
-  partial *= 0.25;
+  partial *= 0.25;*/
+
+  double partial = (grid[gridX + 1][gridY].potential + \
+                    grid[gridX - 1][gridY].potential + \
+                    grid[gridX][gridY + 1].potential + \
+                    grid[gridX][gridY - 1].potential) / 4.0;
 
   double error = (grid[gridX][gridY].potential - partial) * (grid[gridX][gridY].potential - partial);
 

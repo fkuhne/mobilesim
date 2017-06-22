@@ -31,8 +31,8 @@ AriaRobot::AriaRobot(int argc, char** argv)
   }
 
   // limiter for close obstacles
-  ArActionLimiterForwards limiter("speed limiter near", 50, 600, 250);
-  robot.addAction(&limiter, 95);
+  //ArActionLimiterForwards limiter("speed limiter near", 10, 600, 250);
+  //robot.addAction(&limiter, 95);
   // limiter for far away obstacles
   //ArActionLimiterForwards limiterFar("speed limiter far", 50, 1100, 400);
   //robot.addAction(&limiterFar, 90);
@@ -55,8 +55,8 @@ AriaRobot::AriaRobot(int argc, char** argv)
   // set the robots maximum velocity (sonar don't work at all well if you're
   // going faster)
   //robot.setAbsoluteMaxTransVel(100); // mm/sec
-  robot.setHeading(0);
-  robot.setVel(0);
+  //robot.setHeading(0);
+  //robot.setVel(0);
   robot.enableMotors();
 
   /* The robot starts moving right away, without keyboard commands. */
@@ -77,36 +77,38 @@ AriaRobot::AriaRobot(int argc, char** argv)
 
   while(1)
   {
-    //robot.lock();
+    robot.lock();
     double diffTh = sdlTask.getHeading() - robot.getTh();
 
 printf("heading = %.2f, robot = %.2f", sdlTask.getHeading(), robot.getTh());
 
-    diffTh = fmod((diffTh+180+360), 360) - 180;
+    diffTh = fmod((diffTh+180.0+360.0), 360.0) - 180.0;
+//    diffTh *= M_PI/180;
 
 printf(", diffTh = %.2f\n", diffTh);
 
-    if(diffTh <= 90)
-      robot.setVel2(50+50*ArMath::sin(diffTh), 50-50*ArMath::sin(diffTh));
-    else
-      robot.setVel2(10+20*ArMath::sin(diffTh), 10-20*ArMath::sin(diffTh));
-
     //if(diffTh <= 90)
-    //  robot.setVel(70);
+    //  robot.setVel2(50+50*sin(diffTh), 50-50*sin(diffTh));
     //else
-    //  robot.setVel(20);
+    //  robot.setVel2(10+20*sin(diffTh), 10-20*sin(diffTh));
+
+    if(diffTh <= 75)
+      robot.setVel(50);
+    else
+      robot.setVel(10);
 
     //robot.setVel(10);
-    //robot.setHeading(sdlTask.getHeading());
-    //while(true)
-    //{
-    //  if(robot.isHeadingDone()) break;
-    //  ArUtil::sleep(100);
-    //}
-    //robot.setVel(50);
-    //robot.unlock();
+    robot.setHeading(sdlTask.getHeading());
+    robot.unlock();
 
-    ArUtil::sleep(500);
+    while(true)
+    {
+      if(robot.isHeadingDone()) break;
+      ArUtil::sleep(50);
+    }
+    //robot.setVel(50);
+
+    ArUtil::sleep(200);
   }
 }
 

@@ -88,7 +88,7 @@ void OccupancyGrid::computeHIMM(int region, const int gridX, const int gridY)
 
     gro(gridX, gridY);
   }
-  else if(/*grid[gridX][gridY].himm > 0 && */region == 2)
+  else if(grid[gridX][gridY].himm > 0 && region == 2)
   {
     grid[gridX][gridY].himm -= 1;
     if(grid[gridX][gridY].himm < 0)
